@@ -4,6 +4,44 @@ import os
 from torch.utils.data import DataLoader
 import json
 import Levenshtein as lev
+import re
+import string
+import sys
+from collections import Counter
+
+def normalize_answer(s):
+    """Lower text and remove punctuation, articles and extra whitespace."""
+
+    def remove_articles(text):
+        return re.sub(r"\b(a|an|the)\b", " ", text)
+
+    def white_space_fix(text):
+        return " ".join(text.split())
+
+    def remove_punc(text):
+        exclude = set(string.punctuation)
+        return "".join(ch for ch in text if ch not in exclude)
+
+    def lower(text):
+        return text.lower()
+
+    return white_space_fix(remove_articles(remove_punc(lower(s))))
+
+
+def f1_score(ground_truth, prediction):
+    prediction_tokens = normalize_answer(prediction).split()
+    ground_truth_tokens = normalize_answer(ground_truth).split()
+    common = Counter(prediction_tokens) & Counter(ground_truth_tokens)
+    num_same = sum(common.values())
+    if num_same == 0:
+        return 0
+    precision = 1.0 * num_same / len(prediction_tokens)
+    recall = 1.0 * num_same / len(ground_truth_tokens)
+    f1 = (2 * precision * recall) / (precision + recall)
+    return f1
+
+
+
 
 class MyInferencer:
     def __init__(self,opt):
@@ -106,21 +144,27 @@ class MyInferencer:
                     res.append(answer)
 
         # test
-        scores = []
+        L_scores, F_scores = [],[]
         for cand_ans,pred in zip(mydata.raw_test['ans_strs'], res):
             print(pred, ' -v.s.- ',str(cand_ans))
-            cand_scores = []
+            temp_l_scores, temp_f_scores = [],[]
             for ans in cand_ans:
-                score = lev.ratio(ans.lower(),pred.lower())
-                cand_scores.append(score)
-            max_score = max(cand_scores)
-            scores.append(max_score)
-        # print(scores)
-        # print(len(scores))
-        NLS = sum(scores) / len(scores)
-        print(NLS)
-        self.write_res('temp.txt',NLS)
-        return NLS
+                l_score = lev.ratio(ans.lower(),pred.lower()) # Levenshein sim
+                f_score = f1_score(ans, pred) # f1 score
+                temp_l_scores.append(l_score)
+                temp_f_scores.append(f_score)
+
+            L_scores.append(max(temp_l_scores))
+            F_scores.append(max(temp_f_scores))
+
+        avg_l_score = sum(L_scores) / len(L_scores)
+        avg_f_score = sum(F_scores) / len(F_scores)
+
+        res_dict = {'ANLS':avg_l_score,'F1': avg_f_score}
+        print(str(res_dict))
+        self.write_res('temp.txt', model.__class__.__name__ + '\n' )
+        self.write_res('temp.txt',str(res_dict))
+        return res_dict
 
 
     def write_res(self,path,content):

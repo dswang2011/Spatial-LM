@@ -8,11 +8,12 @@ from transformers import TrainingArguments, Trainer
 from transformers.data.data_collator import default_data_collator
 import numpy as np
 from transformers import DataCollatorForLanguageModeling
-import evaluate
 from LMs.mycollator import BlockMaskingDataCollator
 from tqdm.auto import tqdm
 import math
 from LMs.myinferencer import MyInferencer
+from seqeval.metrics import classification_report
+
 
 class MyTrainer:
     def __init__(self,opt):
@@ -214,15 +215,25 @@ class MyTrainer:
         # print(len(true_predictions[0]), ':',true_predictions[0])
         # print(len(true_labels[0]), ':' ,true_labels[0])
 
-
         results = metric.compute(predictions=true_predictions, references=true_labels)
-        
-        print(results)
-        
-        return {
+        r = classification_report(true_labels, true_predictions)
+        print(r)
+        # print(results)
+        # print(results.keys())
+
+        # print([str(i) for i in range(69)])
+        # print(true_predictions)
+        # print(true_labels)
+        # for i in range(69):
+        #     f1 = results[str(i)]['f1']
+        #     recall = results[str(i)]['recall']
+
+        res = {
             "precision": results["overall_precision"],
             "recall": results["overall_recall"],
             "f1": results["overall_f1"],
             "accuracy": results["overall_accuracy"],
         }
+        print(res)
+        return res
 
