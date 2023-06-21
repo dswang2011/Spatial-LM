@@ -28,6 +28,8 @@ class MyTrainer:
         elif opt.task_type == 'blm':
             data_collator = BlockMaskingDataCollator(tokenizer=mydata.tokenizer, mlm=True, mlm_probability=0.035)
 
+        save_strategy = opt.save_strategy
+        
         # logging_steps = len(mydata.train_dataset)  //opt.batch_size
         trainable_ds = mydata.trainable_ds.shuffle(seed=88).train_test_split(test_size=opt.test_size)
 
@@ -44,7 +46,7 @@ class MyTrainer:
             # push_to_hub_model_id = f"layoutlmv3-finetuned-cord"        
             evaluation_strategy = "steps",
             eval_steps = 2000,
-            save_strategy="steps",  # steps, epoch
+            save_strategy=opt.save_strategy,  # steps, epoch, no 
             logging_strategy = 'steps', # epoch, steps, no, default step???
             logging_steps= 512,
             save_steps=2000,
@@ -71,8 +73,6 @@ class MyTrainer:
         # mlm= True uses masked language model; otherwise, causal LM (NTP); 
         # logging_steps = len(mydata.train_dataset)  //opt.batch_size
         trainable_ds = mydata.trainable_ds
-        # from config
-        save_strategy = opt.save_strategy
 
         training_args = TrainingArguments(
             output_dir = opt.checkpoint_save_path,
@@ -86,7 +86,7 @@ class MyTrainer:
             push_to_hub = False,
             # push_to_hub_model_id = f"layoutlmv3-finetuned-cord"        
             evaluation_strategy = "epoch",
-            save_strategy=save_strategy,  # no, epoch, steps
+            save_strategy=opt.save_strategy,  # no, epoch, steps
             logging_strategy = 'steps', # epoch, step, no
             logging_steps = 512,
             save_steps=3000,
