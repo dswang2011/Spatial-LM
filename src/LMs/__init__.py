@@ -84,7 +84,7 @@ def setup(opt):
             if 'checkpoint_path' in opt.__dict__.keys():
                 print('== load from the checkpoint === ', opt.checkpoint_path)
                 config = AutoConfig.from_pretrained(opt.checkpoint_path)   # borrow config
-                config.spatial_attention_update = opt.spatial_attention_update
+                # config.spatial_attention_update = opt.spatial_attention_update
                 model = LayoutLMv3ForMaskedLM.from_pretrained(opt.checkpoint_path, config = config)
             else:
                 # the first time, we first start from layoutlm; put layoutlm_dir
