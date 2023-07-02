@@ -31,8 +31,8 @@ class DocVQA:
         
         if bool(opt.inference_only):
             test_id2qa, test_id2doc = self._load_pickle(os.path.join(self.opt.docvqa_pickles + 'test.pickle'))
-            raw_test = self.get_raw_ds('test',test_id2qa, test_id2doc)
-            self.test_ds = self.get_trainable_dataset(raw_test)
+            self.raw_test = self.get_raw_ds('test',test_id2qa, test_id2doc)
+            self.test_ds = self.get_trainable_dataset(self.raw_test)
             # print('trainable test:', self.trainable_test_ds)
         else:
             train_id2qa, train_id2doc = self._load_pickle(os.path.join(self.opt.docvqa_pickles + 'train.pickle')) # train

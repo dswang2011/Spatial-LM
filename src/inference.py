@@ -13,12 +13,38 @@ import mydataset
 from LMs.myinferencer import MyInferencer
 import LMs
 from utils import util
+import openai
+import json
 
+
+openai.api_key = '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'
 
 def parse_args(config_path):
     parser = argparse.ArgumentParser(description='run the model')
     parser.add_argument('--config', dest='config_file', default = config_path)
     return parser.parse_args()
+
+
+# Function to perform question answering
+def question_answer(doc, question):
+    prompt = f"Document: {doc} \n Question: based on the given document, {question}? Please only provide the exact answer string (no paraphrasing)." 
+
+    print(prompt)
+
+    response = openai.Completion.create(
+        engine='text-davinci-003', # 'text-davinci-003',	‘gpt-3.5-turbo’	‘gpt-4’
+        prompt=prompt,
+        max_tokens=50,
+        temperature=0,
+        n=1,
+        stop=None
+    )
+
+    # Extract the answer from the API response
+    answer = response.choices[0].text.strip()
+
+    return answer
+
 
 if __name__=='__main__':
 
@@ -33,7 +59,7 @@ if __name__=='__main__':
     print('Using device:', params.device)
 
     # section 2, get the model
-    model = LMs.setup(params).to(params.device)
+    # model = LMs.setup(params).to(params.device)
 
     #section 3, trainer
     # mytrainer = MyTrainer(params)
@@ -53,7 +79,7 @@ if __name__=='__main__':
     mydata = mydataset.setup(params)
     # print('-- finished mapping, now inference:', params.cdip_path)
 
-    myinferencer = MyInferencer(params)
+    # myinferencer = MyInferencer(params)
 
     # section 6, classifying and decoding labels
     # img_paths,all_preds = myinferencer.inference_for_classification(params, model, mydata)
@@ -65,6 +91,37 @@ if __name__=='__main__':
 
 
     # section 7, QA infering and output data
-    myinferencer.inference_for_QA(model,mydata,'docvqa_3.json')
+    # myinferencer.inference_for_QA(model,mydata,'docvqa_3.json')
+
+    # section 8, use LLM for inference
+    cnt = 0
+    res = []
+    for inst in mydata.raw_test:
+        words = inst['words']
+        question = inst['question']
+        qID = inst['qID']
+        answers = inst['answers']
+
+        doc = ' '.join(words)
+        # print(doc)
+        # print(question)
+        # print(qID)
+
+        answer = question_answer(doc,question)
+
+        # print(question)
+        print(answer)
 
 
+        # deliver to GPT
+        res.append({"questionId":qID, "answer":answer})
+
+        cnt+=1
+        if cnt>5: break
+    
+    # save it
+    res = json.dumps(res)
+    with open('gpt_res.txt','a') as fw:
+        fw.write(str(res))
+
+    
