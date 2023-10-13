@@ -15,9 +15,12 @@ import LMs
 from utils import util
 import openai
 import json
+import time
 
 
-openai.api_key = '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'
+# openai.api_key = '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'
+openai.api_key = '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'
+
 
 def parse_args(config_path):
     parser = argparse.ArgumentParser(description='run the model')
@@ -31,19 +34,59 @@ def question_answer(doc, question):
 
     print(prompt)
 
-    response = openai.Completion.create(
-        engine='text-davinci-003', # 'text-davinci-003',	‘gpt-3.5-turbo’	‘gpt-4’
-        prompt=prompt,
-        max_tokens=50,
-        temperature=0,
-        n=1,
-        stop=None
-    )
+    try:
+        response = openai.Completion.create(
+            engine='text-davinci-003', # 'text-davinci-003',	‘gpt-3.5-turbo’	‘gpt-4’
+            prompt=prompt,
+            max_tokens=50,
+            temperature=0,
+            n=1,
+            stop=None
+        )
+    except:
+        response = openai.Completion.create(
+            engine='text-davinci-003', # 'text-davinci-003',	‘gpt-3.5-turbo’	‘gpt-4’
+            prompt=prompt,
+            max_tokens=50,
+            temperature=0,
+            n=1,
+            stop=None
+        )
 
     # Extract the answer from the API response
     answer = response.choices[0].text.strip()
 
     return answer
+
+
+def get_completion(doc, question):
+    prompt = f"""
+        Based on the given Document, {question} Please only provide the exact answer string (no paraphrasing).
+
+        Use the following format:
+        Answer:<answer string>
+
+        Document:
+        ```{doc}```
+    """
+    # print(prompt)
+
+    messages = [{"role": "user", "content":prompt}]
+
+    retry = True
+    while retry:
+        try:
+            response = openai.ChatCompletion.create(
+                model = "gpt-3.5-turbo",
+                messages = messages,
+                temperature = 0,
+            )
+            return response.choices[0].message["content"].strip()
+        except:
+            print(' sleep and retry')
+            retry = True
+            time.sleep(10)
+
 
 
 if __name__=='__main__':
@@ -96,10 +139,20 @@ if __name__=='__main__':
     # section 8, use LLM for inference
     cnt = 0
     res = []
+
+    flag = False
     for inst in mydata.raw_test:
         words = inst['words']
         question = inst['question']
         qID = inst['qID']
+        if qID == 64879:
+            flag = True
+            print('--detected--', qID)
+            continue
+
+        if flag == False:
+            continue
+
         answers = inst['answers']
 
         doc = ' '.join(words)
@@ -107,21 +160,28 @@ if __name__=='__main__':
         # print(question)
         # print(qID)
 
-        answer = question_answer(doc,question)
+        # answer = question_answer(doc,question)
+        answer = get_completion(doc,question)
 
         # print(question)
         print(answer)
 
-
+        answer = answer.split("Answer:")[1].strip() 
         # deliver to GPT
         res.append({"questionId":qID, "answer":answer})
-
+        item = str({"questionId":qID, "answer":answer})
+        print(item)
+        with open('temp.txt','a') as fw:
+            fw.write(item + '\n')
         cnt+=1
-        if cnt>5: break
+        if cnt%50==0: 
+            print('-sleep-')
+            time.sleep(5)
+
     
     # save it
     res = json.dumps(res)
-    with open('gpt_res.txt','a') as fw:
+    with open('gpt_res.json','a') as fw:
         fw.write(str(res))
 
     
