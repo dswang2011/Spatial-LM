@@ -20,12 +20,12 @@ class FinDoc:
         self.label_col_name = "ner_tags"
 
         # step 2.1: get raw ds (already normalized bbox, img object)
-        raw_train, raw_test = self.get_raw_ds()
+        self.raw_train, self.raw_test = self.get_raw_ds()
         # step 2.2, get  label_list and label2id dict
-        opt.id2label, opt.label2id, opt.label_list = self._get_label_map(raw_train)
+        opt.id2label, opt.label2id, opt.label_list = self._get_label_map(self.raw_train)
         opt.num_labels = len(opt.label_list)
         # step 2.3, use the dict to map label to idx
-        train_label_ds, test_label_ds = self.get_label_ds(raw_train), self.get_label_ds(raw_test)
+        train_label_ds, test_label_ds = self.get_label_ds(self.raw_train), self.get_label_ds(self.raw_test)
         # load img and norm bbox with max=1000
         normed_train, normed_test = self.get_normed_ds(train_label_ds), self.get_normed_ds(test_label_ds)
 

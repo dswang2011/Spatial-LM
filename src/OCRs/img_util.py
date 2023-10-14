@@ -49,6 +49,36 @@ def _extend_shared_bbox(doc_dict):
     doc_dict['bboxes'] += new_bboxes
     return doc_dict
 
+
+from PIL import Image, ImageDraw # ImageFont
+def visual_pic(doc,page_num=0, save_path=None):
+    img_path = doc['image_path']
+
+    image = Image.open(img_path)
+    image = image.convert("RGB")
+    # change page
+    if page_num>0:
+        image.seek(page_num)
+    # w,h = image.size
+    # if w>1500:
+    #     image = image.resize((w,h))
+
+    draw = ImageDraw.Draw(image, "RGBA")
+
+    for i, bbox in enumerate(doc['bboxes']):
+        # tbox = doc['tboxes'][i]
+        # draw.rectangle(tbox, outline='orange', width=1)
+        if doc['ner_tags'][i]=='O': continue
+        if doc['ner_tags'][i] == 'I-56':
+            draw.rectangle(bbox, outline='green', width=2)
+        else:
+            draw.rectangle(bbox, outline='blue', width=2)
+        # print(tbox)
+        # print(token_txt)
+
+    if save_path is not None:
+        image.save(save_path)
+
 # def _pixel_feature(image_path):
 #     feature_extractor = LayoutLMv3FeatureExtractor.from_pretrained('/home/ubuntu/resources/layoutlmv3.base',apply_ocr=False)
 #     image, size = _load_image(image_path)
